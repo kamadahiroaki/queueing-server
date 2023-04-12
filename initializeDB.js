@@ -35,15 +35,15 @@ const client = new Client({
 client.connect();
 
 const text =
-  "CREATE TABLE jobs(jobid varchar(26),injson varchar(2400),outjson varchar(2400),submitted varchar(80),executor int, started varchar(80), ended varchar(80))";
+  "CREATE TABLE jobs(jobid varchar(26), injson varchar, outjson varchar, submitted varchar(80), executor int, started varchar(80), ended varchar(80))";
 client
   .query(text)
   .then((res) => {
-    console.log(res.rows[0]);
+    // console.log(res.rows[0]);  // for debugging
+    console.log("Successfully created the queue table");
   })
   .catch((e) => console.error(e.stack))
   .finally(() => {
     client.end();
   });
 
-console.log("Successfully created the queue table");
