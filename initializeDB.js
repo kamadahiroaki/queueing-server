@@ -45,3 +45,5 @@ client
   .finally(() => {
     client.end();
   });
+
+console.log("Successfully created the queue table");
