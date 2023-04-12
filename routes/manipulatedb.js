@@ -11,7 +11,7 @@ const newClient = () => {
     //    database: "mytestdb",
     //    password: "postgres",
     //    port: 5432,
-    user: config.password,
+    user: config.user,
     host: config.host,
     database: config.database,
     password: config.password,
