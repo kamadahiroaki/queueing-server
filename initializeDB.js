@@ -25,7 +25,7 @@ try {
 const config = JSON.parse(fs.readFileSync(config_file_path));
 
 const client = new Client({
-  user: config.password,
+  user: config.user,
   host: config.host,
   database: config.database,
   password: config.password,
