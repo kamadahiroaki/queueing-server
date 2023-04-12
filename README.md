@@ -8,7 +8,7 @@ queueing-server is a server to queue jobs. The queueing-server uses a database t
 
 # How to install
 ```bash
-$ git clone <repo URL>
+$ git clone git@github.com:kasahara-lab/queueing-server.git
 $ cd queueing-server
 $ yarn install
 ```
