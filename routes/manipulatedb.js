@@ -6,11 +6,6 @@ const config = JSON.parse(fs.readFileSync("config.json"));
 
 const newClient = () => {
   return new Client({
-    //    user: "postgres",
-    //    host: "localhost",
-    //    database: "mytestdb",
-    //    password: "postgres",
-    //    port: 5432,
     user: config.user,
     host: config.host,
     database: config.database,
