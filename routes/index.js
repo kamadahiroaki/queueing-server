@@ -9,26 +9,21 @@ const router = express.Router();
 const { load, search, register, update, start } = require("./manipulatedb");
 const blastSearch = require("./blastSearch");
 
-const allowCrossDomain = (req, res, next) => {
-  res.header("Access-Control-Allow-Origin", "http://localhost:3000");
-  res.header("Access-Control-Allow-Methods", "GET,PUT,POST,DELETE");
-  res.header(
-    "Access-Control-Allow-Headers",
-    "Origin,X-Requested-With,Content-Type,Accept,Authorization,access-token"
-  );
-  next();
-};
-router.use(allowCrossDomain);
-
 router.use(express.static("public"));
 
 const jobqueue = [];
-load(jobqueue);
-console.log("jobqueue:", jobqueue);
+
+load(jobqueue).then((result) => {
+  console.log("jobqueue:", jobqueue);
+});
 
 /* GET home page. */
 router.get("/", function (req, res, next) {
   res.render("index", { title: "Express" });
+});
+
+router.get("/queue", (req, res, next) => {
+  res.send(jobqueue);
 });
 
 router.get("/blast/jobresult", (req, res, next) => {
@@ -79,8 +74,8 @@ router.post("/jobSubmit", jobUpload.array("files"), (req, res, next) => {
 });
 
 router.post("/jobPull", (req, res, next) => {
-  console.log("jobPull:", req.body);
-  console.log("jobqueue:", jobqueue);
+  //  console.log("jobPull:", req.body);
+  //  console.log("jobqueue:", jobqueue);
   const timeOut = 20000; //milli second
   const now = new Date();
   index = jobqueue.findIndex(
@@ -95,17 +90,17 @@ router.post("/jobPull", (req, res, next) => {
   let result = { message: "", job: null };
   if (index >= 0) {
     jobqueue[index].executor = req.body.executor;
-    start(jobqueue[index].jobid);
+    start(jobqueue[index].jobid, req.body.executor);
     search(jobqueue[index].jobid).then((job) => {
       jobqueue[index].started = new Date(job.started);
     });
     result.message = "job found";
     result.job = jobqueue[index];
-    console.log("result:", result.job);
+    //    console.log("result:", result.job);
     res.send(result);
   } else {
     result.message = "no remaining job";
-    console.log("result:", result);
+    //    console.log("result:", result);
     res.send(result);
   }
   //  res.send(result);
@@ -113,15 +108,19 @@ router.post("/jobPull", (req, res, next) => {
 
 router.post("/jobFinished", resultUpload.single("file"), (req, res, next) => {
   const file = req.file;
-  console.log("file:", file);
+  //  console.log("file:", file);
   fs.renameSync(file.path, "public/resultUploads/" + file.originalname);
 
   result = JSON.parse(req.body.job);
+  console.log("resultFinished:", result);
 
   index = jobqueue.findIndex((job) => job.jobid === result.jobid);
   if (index >= 0 && jobqueue[index].outjson == null) {
     jobqueue[index].outjson = result.outjson;
     update(jobqueue[index].jobid, result.outjson);
+    search(jobqueue[index].jobid).then((job) => {
+      jobqueue[index].ended = new Date(job.ended);
+    });
     console.log("job updated");
     res.send("received result");
   } else if (index >= 0) {

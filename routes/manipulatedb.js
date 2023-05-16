@@ -95,13 +95,13 @@ const update = (jobid, outjson) => {
     });
 };
 
-const start = (jobid) => {
+const start = (jobid, executor) => {
   const client = newClient();
   client.connect();
 
   const started = new Date();
-  const text = "UPDATE jobs SET started=$2 WHERE jobid=$1";
-  values = [jobid, started];
+  const text = "UPDATE jobs SET started=$2,executor=$3 WHERE jobid=$1";
+  values = [jobid, started, executor];
   return client
     .query(text, values)
     .then((res) => {
