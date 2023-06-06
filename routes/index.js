@@ -7,7 +7,6 @@ const path = require("path");
 const FormData = require("form-data");
 const router = express.Router();
 const { load, search, register, update, start } = require("./manipulatedb");
-const blastSearch = require("./blastSearch");
 
 router.use(express.static("public"));
 
