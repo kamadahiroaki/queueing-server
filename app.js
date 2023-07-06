@@ -3,7 +3,7 @@ const express = require("express");
 const path = require("path");
 const cookieParser = require("cookie-parser");
 const logger = require("morgan");
-
+const fs = require("fs");
 const app = express();
 
 // view engine setup
@@ -28,7 +28,17 @@ const allowCrossDomain = (req, res, next) => {
 };
 app.use(allowCrossDomain);
 
-const auth = { username: "admin", password: "admin" };
+const master_file_path = "master.json";
+if (!fs.existsSync(master_file_path, fs.constants.F_OK)) {
+  console.log(
+    "ERROR: master.json file not found. Please execute initializeenv.js first."
+  );
+  process.exit(1);
+}
+const master = JSON.parse(fs.readFileSync(master_file_path));
+const clientAuth = master.client;
+const executorAuth = master.executor;
+//const auth = { username: "admin", password: "admin" };
 app.use((req, res, next) => {
   const b64auth = req.headers.authorization || "";
   const [username, password] = Buffer.from(
@@ -38,13 +48,18 @@ app.use((req, res, next) => {
     .toString()
     .split(":");
   if (
+    req.method === "OPTIONS" ||
     (username &&
       password &&
-      username === auth.username &&
-      password === auth.password) ||
-    req.method === "OPTIONS"
+      ((username === executorAuth.username &&
+        password === executorAuth.password) ||
+        (username === clientAuth.username && password === clientAuth.password)))
   ) {
     return next();
+  } else {
+    console.log("Invalid credentials");
+    console.log("username: " + username);
+    console.log("password: " + password);
   }
   res.set("WWW-Authenticate", 'Basic realm="401"');
   res.status(401).send("Authentication required.");
