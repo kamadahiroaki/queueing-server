@@ -148,5 +148,6 @@ dist
 config.json
 master.json
 executor.json
+*.sqlite3
 "
 "
