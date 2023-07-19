@@ -25,7 +25,7 @@ router.get("/queue", (req, res, next) => {
   res.send(jobqueue);
 });
 
-router.get("/blast/jobresult", (req, res, next) => {
+router.get("/jobResult", (req, res, next) => {
   const job = jobqueue.find((job) => job.jobid === req.query.jobid);
   res.send(job);
 });
