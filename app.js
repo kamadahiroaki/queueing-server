@@ -28,17 +28,6 @@ const serverFile = JSON.parse(fs.readFileSync(server_file_path));
 const reactAppServerUrl = serverFile.reactAppServerUrl;
 
 app.use(cors({ origin: reactAppServerUrl, credentials: true }));
-// const allowCrossDomain = (req, res, next) => {
-//   res.header("Access-Control-Allow-Origin", "http://localhost:5000");
-//   res.header("Access-Control-Allow-Credentials", "true");
-//   res.header("Access-Control-Allow-Methods", "GET,PUT,POST,DELETE");
-//   res.header(
-//     "Access-Control-Allow-Headers",
-//     "Origin,X-Requested-With,Content-Type,Accept,Authorization,access-token"
-//   );
-//   next();
-// };
-// app.use(allowCrossDomain);
 
 const master_file_path = "master.json";
 if (!fs.existsSync(master_file_path, fs.constants.F_OK)) {
