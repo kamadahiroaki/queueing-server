@@ -6,8 +6,9 @@ const fs = require("fs");
 const path = require("path");
 const FormData = require("form-data");
 const router = express.Router();
-const { load, search, register, update, start } = require("./manipulatedb");
+//const { load, search, register, update, start } = require("./manipulatedb");
 const {
+  getAllRecords,
   getUnfinishedRecords,
   getRecordById,
   getRecordsByUser,
@@ -15,29 +16,65 @@ const {
   startRecord,
   endRecord,
 } = require("../manipulateSQLiteDB");
+const { type } = require("os");
+const { get } = require("http");
 
 router.use(express.static("public"));
 
-const unfinishedJobs = getUnfinishedRecords();
-const jobqueue = [];
-
-load(jobqueue).then((result) => {
-  console.log("jobqueue:", jobqueue);
-});
+const unfinishedJobs = [];
+const loadUnfinishedJobs = async () => {
+  const records = await getUnfinishedRecords();
+  for (const record of records) {
+    unfinishedJobs.push(record);
+  }
+  //  console.log("unfinishedJobs:", unfinishedJobs);
+};
+loadUnfinishedJobs();
 
 /* GET home page. */
 router.get("/", function (req, res, next) {
   res.render("index", { title: "Express" });
 });
 
-router.get("/queue", (req, res, next) => {
-  res.send(jobqueue);
+router.get("/unfinishedJobs", (req, res, next) => {
+  res.send(unfinishedJobs);
 });
 
+router.get("/usersJobs", (req, res, next) => {
+  getRecordsByUser(req.headers["user"])
+    .then((records) => {
+      res.send(records);
+    })
+    .catch((err) => {
+      console.error(err);
+      res.send({ message: "error" });
+    });
+});
+
+router.get("/allJobs", (req, res, next) => {
+  getAllRecords()
+    .then((records) => {
+      res.send(records);
+    })
+    .catch((err) => {
+      console.error(err);
+      res.send({ message: "error" });
+    });
+});
+
+// router.get("/queue", (req, res, next) => {
+//   res.send(jobqueue);
+// });
+
 router.get("/jobResult", (req, res, next) => {
-  //  const job = jobqueue.find((job) => job.jobid === req.query.jobid);
-  const job = getRecordById(req.query.jobid);
-  res.send(job);
+  getRecordById(req.query.jobid)
+    .then((job) => {
+      res.send(job);
+    })
+    .catch((err) => {
+      console.error(err);
+      res.send({ message: "error" });
+    });
 });
 
 router.get("/resultFile", (req, res, next) => {
@@ -58,40 +95,21 @@ router.post("/jobSubmit", jobUpload.array("files"), (req, res, next) => {
   if (req.files.length > 0) {
     params.infiles = req.files.length;
   }
-  console.log("params:", params);
-  const record = registerRecord(JSON.stringify(params));
-  console.log("submit record:", record);
-  if (record == null) {
-    res.send({ message: "could not register job" });
-  } else {
-    for (let i = 0; i < req.files.length; i++) {
-      const file = req.files[i];
-      fs.renameSync(file.path, "public/jobUploads/" + jobid + "_" + i);
+  registerRecord(JSON.stringify(params), req.headers["user"]).then((record) => {
+    console.log("req.headers['user']:", req.headers["user"]);
+    console.log("record:", record);
+    console.log(typeof record);
+    if (record == null) {
+      res.send({ message: "could not register job" });
+    } else {
+      unfinishedJobs.push(record);
+      for (let i = 0; i < req.files.length; i++) {
+        const file = req.files[i];
+        fs.renameSync(file.path, "public/jobUploads/" + record.jobid + "_" + i);
+      }
+      res.send(record);
     }
-    unfinishedJobs.push(record);
-    res.send(record);
-  }
-  // register(JSON.stringify(params))
-  //   .then((jobid) => {
-  //     const newjob = {
-  //       jobid: jobid,
-  //       injson: JSON.stringify(params),
-  //       started: null,
-  //       executor: null,
-  //       outjson: null,
-  //     };
-  //     jobqueue.push(newjob);
-  //     for (let i = 0; i < req.files.length; i++) {
-  //       const file = req.files[i];
-  //       fs.renameSync(file.path, "public/jobUploads/" + jobid + "_" + i);
-  //     }
-  //     search(jobid).then((result) => {
-  //       res.send(result);
-  //     });
-  //   })
-  //   .catch((err) => {
-  //     console.log("err:", err);
-  //   });
+  });
 });
 
 router.post("/jobPull", (req, res, next) => {
@@ -108,43 +126,24 @@ router.post("/jobPull", (req, res, next) => {
     index = unfinishedJobs.findIndex((job) => job.executor == null);
   }
   if (index < 0) {
+    console.log(unfinishedJobs);
     res.send({ message: "no remaining job", job: null });
   } else {
-    const record = startRecord(unfinishedJobs[index].jobid, req.body.executor);
-    if (record == null) {
-      res.send({ message: "could not start job", job: null });
-    } else {
-      unfinishedJobs[index].executor = req.body.executor;
-      unfinishedJobs[index].started = record.started;
-      res.send({ message: "", job: record });
-    }
+    startRecord(unfinishedJobs[index].jobid, req.body.executor)
+      .then((record) => {
+        if (record == null) {
+          res.send({ message: "could not start job", job: null });
+        } else {
+          unfinishedJobs[index].executor = req.body.executor;
+          unfinishedJobs[index].started = record.started;
+          res.send({ message: "", job: record });
+        }
+      })
+      .catch((err) => {
+        console.log("err:", err);
+        res.send({ message: "could not start job", job: null });
+      });
   }
-  // index = jobqueue.findIndex(
-  //   (job) =>
-  //     job.outjson === null &&
-  //     job.executor != null &&
-  //     now.valueOf() - job.started.valueOf() > timeOut
-  // );
-  // if (index < 0) {
-  //   index = jobqueue.findIndex((job) => job.executor == null);
-  // }
-  // let result = { message: "", job: null };
-  // if (index >= 0) {
-  //   jobqueue[index].executor = req.body.executor;
-  //   start(jobqueue[index].jobid, req.body.executor);
-  //   search(jobqueue[index].jobid).then((job) => {
-  //     jobqueue[index].started = new Date(job.started);
-  //   });
-  //   result.message = "job found";
-  //   result.job = jobqueue[index];
-  //   //    console.log("result:", result.job);
-  //   res.send(result);
-  // } else {
-  //   result.message = "no remaining job";
-  //   //    console.log("result:", result);
-  //   res.send(result);
-  // }
-  // //  res.send(result);
 });
 
 router.post("/jobFinished", resultUpload.single("file"), (req, res, next) => {
@@ -155,36 +154,29 @@ router.post("/jobFinished", resultUpload.single("file"), (req, res, next) => {
   result = JSON.parse(req.body.job);
   //  console.log("resultFinished:", result);
 
-  const record = endRecord(result.jobid, JSON.stringify(result.outjson));
-  console.log("end record:", record);
-  if (record == null) {
-    res.send({ message: "job " + result.jobid + " is not registered" });
-  } else {
-    const index = unfinishedJobs.findIndex((job) => job.jobid === record.jobid);
-    if (index < 0) {
-      console.error("job " + record.jobid + " is not in unfinishedJobs");
-    } else if (unfinishedJobs[index].ended != null) {
-      console.error("job " + record.jobid + " is already finished");
-    } else {
-      unfinishedJobs.splice(index, 1);
-    }
-  }
+  endRecord(result.jobid, JSON.stringify(result.outjson))
+    .then((record) => {
+      if (record == null) {
+        res.send({ message: "job " + result.jobid + " is not registered" });
+      } else {
+        const index = unfinishedJobs.findIndex(
+          (job) => job.jobid === record.jobid
+        );
+        if (index < 0) {
+          console.error("job " + record.jobid + " is not in unfinishedJobs");
+        } else if (unfinishedJobs[index].ended != null) {
+          console.error("job " + record.jobid + " is already finished");
+        } else {
+          unfinishedJobs.splice(index, 1);
+        }
 
-  // index = jobqueue.findIndex((job) => job.jobid === result.jobid);
-  // if (index >= 0 && jobqueue[index].outjson == null) {
-  //   jobqueue[index].outjson = result.outjson;
-  //   update(jobqueue[index].jobid, result.outjson);
-  //   search(jobqueue[index].jobid).then((job) => {
-  //     jobqueue[index].ended = new Date(job.ended);
-  //   });
-  //   console.log("job updated");
-  //   res.send("received result");
-  // } else if (index >= 0) {
-  //   res.send("received result");
-  // } else {
-  //   console.error("unknown job executed");
-  //   res.send("error");
-  // }
+        res.send({ message: "received result" });
+      }
+    })
+    .catch((err) => {
+      console.log("err:", err);
+      res.send({ message: "job " + result.jobid + " is not registered" });
+    });
 });
 
 router.options("/", (req, res, next) => {
