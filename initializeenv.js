@@ -3,7 +3,7 @@ const fs = require("fs");
 
 // パスワードの設定
 const passwordOptions = {
-  length: 32, // パスワードの長さ
+  length: 64, // パスワードの長さ
   numbers: true, // 数字を含む
   //  symbols: true, // 特殊文字を含む
   symbols: false,

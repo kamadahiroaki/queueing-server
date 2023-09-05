@@ -24,10 +24,13 @@ router.use(express.static("public"));
 const unfinishedJobs = [];
 const loadUnfinishedJobs = async () => {
   const records = await getUnfinishedRecords();
+  const now = new Date();
+  const timeOut = 24 * 3600 * 1000; //milli second
   for (const record of records) {
-    unfinishedJobs.push(record);
+    if (record.executor == null || now - new Date(record.started) < timeOut) {
+      unfinishedJobs.push(record);
+    }
   }
-  //  console.log("unfinishedJobs:", unfinishedJobs);
 };
 loadUnfinishedJobs();
 
@@ -91,14 +94,7 @@ router.get("/jobFile", (req, res, next) => {
 
 router.post("/jobSubmit", jobUpload.array("files"), (req, res, next) => {
   const params = JSON.parse(req.body.params);
-  params.infiles = 0;
-  if (req.files.length > 0) {
-    params.infiles = req.files.length;
-  }
   registerRecord(JSON.stringify(params), req.headers["user"]).then((record) => {
-    console.log("req.headers['user']:", req.headers["user"]);
-    console.log("record:", record);
-    console.log(typeof record);
     if (record == null) {
       res.send({ message: "could not register job" });
     } else {
@@ -113,37 +109,40 @@ router.post("/jobSubmit", jobUpload.array("files"), (req, res, next) => {
 });
 
 router.post("/jobPull", (req, res, next) => {
-  //  console.log("jobPull:", req.body);
-  //  console.log("jobqueue:", jobqueue);
-  const timeOut = 20000; //milli second
-  const now = new Date();
+  const timeOut = 2 * 3600 * 1000; //milli second
+  const getIndexInterval = 1000;
 
-  let index = unfinishedJobs.findIndex(
-    (job) =>
-      job.executor != null && now.valueOf() - job.started.valueOf() > timeOut
-  );
-  if (index < 0) {
-    index = unfinishedJobs.findIndex((job) => job.executor == null);
-  }
-  if (index < 0) {
-    console.log(unfinishedJobs);
-    res.send({ message: "no remaining job", job: null });
-  } else {
-    startRecord(unfinishedJobs[index].jobid, req.body.executor)
-      .then((record) => {
-        if (record == null) {
+  const getIndex = () => {
+    const now = new Date();
+    let i = unfinishedJobs.findIndex(
+      (job) => job.executor != null && now - new Date(job.started) > timeOut
+    );
+    if (i < 0) {
+      i = unfinishedJobs.findIndex((job) => job.executor == null);
+    }
+    return i;
+  };
+
+  const timer = setInterval(() => {
+    index = getIndex();
+    if (index >= 0) {
+      clearInterval(timer);
+      startRecord(unfinishedJobs[index].jobid, req.body.executor)
+        .then((record) => {
+          if (record == null) {
+            res.send({ message: "could not start job", job: null });
+          } else {
+            unfinishedJobs[index].executor = req.body.executor;
+            unfinishedJobs[index].started = record.started;
+            res.send({ message: "", job: record });
+          }
+        })
+        .catch((err) => {
+          console.log("err:", err);
           res.send({ message: "could not start job", job: null });
-        } else {
-          unfinishedJobs[index].executor = req.body.executor;
-          unfinishedJobs[index].started = record.started;
-          res.send({ message: "", job: record });
-        }
-      })
-      .catch((err) => {
-        console.log("err:", err);
-        res.send({ message: "could not start job", job: null });
-      });
-  }
+        });
+    }
+  }, getIndexInterval);
 });
 
 router.post("/jobFinished", resultUpload.single("file"), (req, res, next) => {
