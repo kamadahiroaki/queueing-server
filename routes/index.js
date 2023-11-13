@@ -6,7 +6,6 @@ const fs = require("fs");
 const path = require("path");
 const FormData = require("form-data");
 const router = express.Router();
-//const { load, search, register, update, start } = require("./manipulatedb");
 const {
   getAllRecords,
   getUnfinishedRecords,
@@ -16,8 +15,6 @@ const {
   startRecord,
   endRecord,
 } = require("../manipulateSQLiteDB");
-const { type } = require("os");
-const { get } = require("http");
 
 router.use(express.static("public"));
 
@@ -81,8 +78,7 @@ router.get("/jobResult", (req, res, next) => {
 });
 
 router.get("/resultFile", (req, res, next) => {
-  const fileName = req.query.jobid + ".html";
-  console.log("fileName:", fileName);
+  const fileName = req.query.fileName;
   res.sendFile(fileName, { root: "public/resultUploads" });
 });
 
@@ -93,6 +89,8 @@ router.get("/jobFile", (req, res, next) => {
 });
 
 router.post("/jobSubmit", jobUpload.array("files"), (req, res, next) => {
+  //  console.log("req.files:", req.files);
+  //  console.log("req.body:", req.body);
   const params = JSON.parse(req.body.params);
   registerRecord(JSON.stringify(params), req.headers["user"]).then((record) => {
     if (record == null) {
@@ -145,13 +143,12 @@ router.post("/jobPull", (req, res, next) => {
   }, getIndexInterval);
 });
 
-router.post("/jobFinished", resultUpload.single("file"), (req, res, next) => {
-  const file = req.file;
-  //  console.log("file:", file);
-  fs.renameSync(file.path, "public/resultUploads/" + file.originalname);
-
+router.post("/jobFinished", resultUpload.array("files"), (req, res, next) => {
+  for (let i = 0; i < req.files.length; i++) {
+    const file = req.files[i];
+    fs.renameSync(file.path, "public/resultUploads/" + file.originalname);
+  }
   result = JSON.parse(req.body.job);
-  //  console.log("resultFinished:", result);
 
   endRecord(result.jobid, JSON.stringify(result.outjson))
     .then((record) => {

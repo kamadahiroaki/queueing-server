@@ -17,6 +17,11 @@ app.use(express.urlencoded({ extended: true, limit: "10mb" }));
 app.use(cookieParser());
 app.use(express.static(path.join(__dirname, "public")));
 
+// app.use((err, req, res, next) => {
+//   console.error(err.stack);
+//   res.status(500).send("Something broke!");
+// });
+
 const server_file_path = "server.json";
 if (!fs.existsSync(server_file_path, fs.constants.F_OK)) {
   console.log(
