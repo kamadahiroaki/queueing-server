@@ -24,9 +24,7 @@ app.use(express.static(path.join(__dirname, "public")));
 
 const server_file_path = "server.json";
 if (!fs.existsSync(server_file_path, fs.constants.F_OK)) {
-  console.log(
-    "ERROR: server.json file not found. Please execute initializeenv.js first."
-  );
+  console.log("ERROR: server.json file not found.");
   process.exit(1);
 }
 const serverFile = JSON.parse(fs.readFileSync(server_file_path));
@@ -37,7 +35,7 @@ app.use(cors({ origin: reactAppServerUrl, credentials: true }));
 const master_file_path = "master.json";
 if (!fs.existsSync(master_file_path, fs.constants.F_OK)) {
   console.log(
-    "ERROR: master.json file not found. Please execute initializeenv.js first."
+    "ERROR: master.json file not found. Please execute generateMasterPass.js first."
   );
   process.exit(1);
 }
