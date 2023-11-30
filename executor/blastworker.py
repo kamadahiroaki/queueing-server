@@ -1,16 +1,16 @@
 import requests
 from requests.auth import HTTPBasicAuth
-from requests_toolbelt.multipart.encoder import MultipartEncoder
+# from requests_toolbelt.multipart.encoder import MultipartEncoder
 import time
 import json
 import subprocess
-import zipfile
-import io
+# import zipfile
+# import io
 import os
-from dotenv import load_dotenv
-from Bio.Blast import NCBIXML
+# from dotenv import load_dotenv
+# from Bio.Blast import NCBIXML
 
-load_dotenv()
+# load_dotenv()
 master = json.load(open("master.json", "r"))
 server = json.load(open("server.json", "r"))
 url = server["queueingServerUrl"]
@@ -105,22 +105,22 @@ while True:
             resultFile = open(outFilePath, "r")
             print(job["outjson"])
             endPayload = {"executor": "1", "job": json.dumps(job)}
-            with open(outFilePath) as xmlFile, open(txtFilePath, "w") as txtFile:
-                blast_records = NCBIXML.parse(xmlFile)
-                for blast_record in blast_records:
-                    txtFile.write(
-                        f"> {blast_record.query} (length={blast_record.query_length})\n")
-                    for alignment in blast_record.alignments:
-                        for hsp in alignment.hsps:
-                            txtFile.write(f"  Hit: {alignment.title}\n")
-                            txtFile.write(f"    Length: {alignment.length}\n")
-                            txtFile.write(f"    Score: {hsp.score}\n")
-                            txtFile.write(f"    E-value: {hsp.expect}\n")
-                            txtFile.write(
-                                f"    Identity: {hsp.identities}/{hsp.align_length} ({hsp.positives} positives)\n")
-                            txtFile.write(f"    Query: {hsp.query}\n")
-                            txtFile.write(f"    Match: {hsp.match}\n")
-                            txtFile.write(f"    Sbjct: {hsp.sbjct}\n\n")
+            # with open(outFilePath) as xmlFile, open(txtFilePath, "w") as txtFile:
+            #     blast_records = NCBIXML.parse(xmlFile)
+            #     for blast_record in blast_records:
+            #         txtFile.write(
+            #             f"> {blast_record.query} (length={blast_record.query_length})\n")
+            #         for alignment in blast_record.alignments:
+            #             for hsp in alignment.hsps:
+            #                 txtFile.write(f"  Hit: {alignment.title}\n")
+            #                 txtFile.write(f"    Length: {alignment.length}\n")
+            #                 txtFile.write(f"    Score: {hsp.score}\n")
+            #                 txtFile.write(f"    E-value: {hsp.expect}\n")
+            #                 txtFile.write(
+            #                     f"    Identity: {hsp.identities}/{hsp.align_length} ({hsp.positives} positives)\n")
+            #                 txtFile.write(f"    Query: {hsp.query}\n")
+            #                 txtFile.write(f"    Match: {hsp.match}\n")
+            #                 txtFile.write(f"    Sbjct: {hsp.sbjct}\n\n")
             files = [("files", open(outFilePath, "r")),
                      ("files", open(txtFilePath, "r"))]
             r = requests.post(url + "/jobFinished", auth=auth,
