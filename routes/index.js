@@ -7,6 +7,7 @@ const path = require("path");
 const FormData = require("form-data");
 const router = express.Router();
 const {
+  loadDatabase,
   getAllRecords,
   getUnfinishedRecords,
   getRecordById,
@@ -29,7 +30,9 @@ const loadUnfinishedJobs = async () => {
     }
   }
 };
-loadUnfinishedJobs();
+loadDatabase()
+  .then((jobdb) => loadUnfinishedJobs())
+  .catch((err) => console.error(err));
 
 /* GET home page. */
 router.get("/", function (req, res, next) {

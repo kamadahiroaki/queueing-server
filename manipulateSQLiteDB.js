@@ -1,14 +1,19 @@
 const sqlite3 = require("sqlite3").verbose();
 const { ulid } = require("ulid");
 
-const jobdb = new sqlite3.Database("queueing-server-job-db.sqlite3", (err) => {
-  if (err) {
-    console.error("データベースに接続できませんでした。", err.message);
-    return;
-  }
+const loadDatabase = () => {
+  return new Promise((resolve, reject) => {
+    const jobdb = new sqlite3.Database(
+      "queueing-server-job-db.sqlite3",
+      (err) => {
+        if (err) {
+          console.error("データベースに接続できませんでした。", err.message);
+          reject(err);
+          // return;
+        }
 
-  // jobsテーブルを作成するクエリ
-  const createTableQuery = `
+        // jobsテーブルを作成するクエリ
+        const createTableQuery = `
       CREATE TABLE IF NOT EXISTS jobs (
         jobid TEXT PRIMARY KEY,
         user TEXT,
@@ -21,15 +26,20 @@ const jobdb = new sqlite3.Database("queueing-server-job-db.sqlite3", (err) => {
       );
     `;
 
-  // テーブル作成の実行
-  jobdb.run(createTableQuery, (err) => {
-    if (err) {
-      console.error("テーブルの作成に失敗しました。", err.message);
-    } else {
-      console.log("jobsテーブルが作成されました。");
-    }
+        // テーブル作成の実行
+        jobdb.run(createTableQuery, (err) => {
+          if (err) {
+            console.error("テーブルの作成に失敗しました。", err.message);
+            reject(err);
+          } else {
+            console.log("jobsテーブルが作成されました。");
+            resolve(jobdb);
+          }
+        });
+      }
+    );
   });
-});
+};
 
 const getAllRecords = () => {
   const selectAllQuery = `
@@ -230,6 +240,7 @@ const endRecord = (jobid, outjson) => {
 // });
 
 module.exports = {
+  loadDatabase,
   getAllRecords,
   getUnfinishedRecords,
   getRecordById,
