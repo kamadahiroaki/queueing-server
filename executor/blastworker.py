@@ -66,12 +66,16 @@ while True:
         outFilePath = "result/" + job["jobid"] + ".xml"
         errFilePath = "result/" + job["jobid"] + ".err"
         txtFilePath = "result/" + job["jobid"] + ".txt"
+        args = [program_path+params["alignmentTool"], "-out", outFilePath,
+                "-outfmt", "5", "-query", "jobFiles/"+job["jobid"]+"_0"]
         cmd = program_path+params["alignmentTool"]+" "
         cmd += "-out "+outFilePath+" "
         cmd += "-outfmt 5 "
         cmd += "-query "+"jobFiles/"+job["jobid"]+"_0"+" "
         if params["alignTwoOrMoreSequences"] == True:
             cmd += "-subject "+"jobFiles/"+job["jobid"]+"_1"+" "
+            args.append("-subject")
+            args.append("jobFiles/"+job["jobid"]+"_1")
         for key, value in params.items():
             if key == "alignmentTool":
                 continue
@@ -81,14 +85,21 @@ while True:
                 continue
             if key == "db" and (params["alignmentTool"] == "blastn" or params["alignmentTool"] == "tblastn" or params["alignmentTool"] == "tblastx"):
                 cmd += " -db "+dbpath+value+" "
+                args.append("-db")
+                args.append(dbpath+value)
                 continue
             if key == "db" and (params["alignmentTool"] == "blastp" or params["alignmentTool"] == "blastx"):
                 cmd += " -db "+dbpath+value+" "
+                args.append("-db")
+                args.append(dbpath+value)
                 continue
             cmd += "-"+key+" "+str(value)+" "
+            args.append("-"+key)
+            args.append(str(value))
 
         print("cmd:", cmd)
-        blastResult = subprocess.run(cmd, capture_output=True, text=True)
+#        blastResult = subprocess.run(cmd, capture_output=True, text=True)
+        blastResult = subprocess.run(args, capture_output=True, text=True)
         returncode = blastResult.returncode
         print("returncode:", returncode)
 
