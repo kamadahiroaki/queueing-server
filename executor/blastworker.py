@@ -47,6 +47,8 @@ while True:
         print(params)
         if not os.path.exists("jobFiles"):
             os.makedirs("jobFiles")
+        if not os.path.exists("result"):
+            os.makedirs("result")
         fileName = job["jobid"]+"_0"
         r = requests.get(url + "/jobFile?fileName=" +
                          fileName, headers=headers, auth=auth)
