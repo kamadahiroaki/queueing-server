@@ -135,8 +135,7 @@ while True:
             #                 txtFile.write(f"    Query: {hsp.query}\n")
             #                 txtFile.write(f"    Match: {hsp.match}\n")
             #                 txtFile.write(f"    Sbjct: {hsp.sbjct}\n\n")
-            files = [("files", open(outFilePath, "r")),
-                     ("files", open(txtFilePath, "r"))]
+            files = [("files", open(outFilePath, "r"))]
             r = requests.post(url + "/jobFinished", auth=auth,
                               data=endPayload, files=files)
         print("job:", json.dumps(job))
