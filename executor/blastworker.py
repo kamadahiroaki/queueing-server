@@ -62,7 +62,8 @@ while True:
                 f.write(r.content)
 
         program_path = ""
-        dbpath = "~/genomeportal/blastdb/"
+#        dbpath = "~/genomeportal/blastdb/"
+        dbpath = "blastdb/"
         outFilePath = "result/" + job["jobid"] + ".xml"
         errFilePath = "result/" + job["jobid"] + ".err"
         txtFilePath = "result/" + job["jobid"] + ".txt"
